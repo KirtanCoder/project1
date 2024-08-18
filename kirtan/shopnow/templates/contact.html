@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+contact |
+{% endblock title %}
+
+
+{% block body %}
+<div class="image">
+<img src="https://cdn.pixabay.com/photo/2018/05/24/17/35/parrots-3427188_640.jpg" alt="">
+</div>
+<form method="post" action="/contact">
+{% csrf_token %}
+    <div class="mb-3">
+      <label for="email" >Email address</label>
+      <input type="text" class="form-control" name = "email" id="email" aria-describedby="emailHelp">
+      <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+    </div>
+    <div class="mb-3">
+      <label for="name" class="form-label">phone</label>
+      <input type="text" class="form-control" name = "name" id="name">
+    </div>
+    
+    
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
+
+{% endblock body %}
