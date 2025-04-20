@@ -240,3 +240,5 @@ document.addEventListener('DOMContentLoaded', updateAQITable);
         }, 300000);
       });
     
+
+      
