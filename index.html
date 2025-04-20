@@ -4,171 +4,245 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AQIAPP</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
       body {
-        padding-top: 70px; /* To account for fixed navbar */
+        padding-top: 70px;
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to bottom right, #4facfe, #8e44ad);
+        color: white;
+        text-align: center;
       }
-      .search-container {
-        margin: 20px auto;
-        max-width: 600px;
+      .search-container { 
+        margin: 20px auto; 
+        max-width: 600px; 
       }
-      .pricing-cards {
-        margin-bottom: 30px;
+      .card {
+        padding: 20px;
+        border-radius: 12px;
+        max-width: 500px;
+        margin: 30px auto 0;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        transition: background 0.5s ease;
+        color: white;
       }
-      .table-container {
-        margin-top: 30px;
+      .aqi-good { background: #009966; }
+      .aqi-fair { background: #ffde33; color: #000; }
+      .aqi-moderate { background: #ff9933; }
+      .aqi-poor { background: #cc0033; }
+      .aqi-very-poor { background: #660099; }
+      input[type="text"] {
+        padding: 10px;
+        border-radius: 8px;
+        border: none;
+        width: 250px;
+        margin-right: 8px;
+      }
+      button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 8px;
+        background-color: #fff;
+        color: #333;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      #loading { margin-top: 30px; font-size: 18px; }
+      .pollutants { margin-top: 20px; text-align: left; }
+      .pollutant { margin-bottom: 12px; }
+      .bar { height: 18px; border-radius: 10px; background: #444; margin-top: 5px; position: relative; overflow: hidden; }
+      .bar-fill { height: 100%; border-radius: 10px; transition: width 0.5s ease; }
+      .label { font-size: 14px; font-weight: bold; }
+      canvas { max-width: 100%; margin-top: 40px; }
+      /* Fixed Navbar */
+      .navbar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+      }
+      /* Content Adjustments */
+      #content {
+        padding-bottom: 70px; /* Space for the fixed navbar */
       }
     </style>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg bg-body-tertiary fixed-top">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">AQIAPP</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="#">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-            </li>
-          </ul>
-          <form class="d-flex" role="search">
-            <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-            <button class="btn btn-outline-success" type="submit">Search</button>
-          </form>
+    <div id="content">
+      <h1>Live Air Quality Index</h1>
+      <div class="search-container">
+        <input type="text" id="city-input" placeholder="Enter city name..." />
+        <button onclick="searchCity()">Search</button>
+      </div>
+      <div id="aqi-card" class="card" style="display: none;">
+        <h2 id="location-name">Your Location AQI</h2>
+        <p><strong>Coordinates:</strong> <span id="city"></span></p>
+        <p><strong>AQI:</strong> <span id="aqi"></span></p>
+        <p><strong>Dominant Pollutant:</strong> <span id="pollutant"></span></p>
+        <div class="pollutants" id="pollutant-bars"></div>
+      </div>
+      <p id="loading">Fetching location and AQI...</p>
+      <canvas id="aqi-chart" width="400" height="200" style="display: none;"></canvas>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light" style="background-color: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);">
+      <div class="container-fluid d-flex justify-content-between">
+        <!-- Left aligned item -->
+        <div class="d-flex justify-content-start">
+          <button  class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true" style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc;">Home</button>
+        </div>
+
+        <!-- Center aligned item -->
+        <div class="d-flex justify-content-center flex-grow-1">
+          <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false" style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc;">Graph</button>
+        </div>
+
+        <!-- Right aligned item -->
+        <div class="d-flex justify-content-end">
+          <button class="nav-link" id="nav-contact-tab" data-bs-toggle="tab" data-bs-target="#nav-contact" type="button" role="tab" aria-controls="nav-contact" aria-selected="false" style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc;">Compare</button>
         </div>
       </div>
     </nav>
 
-    <div class="container">
-      <div id="weatherCarousel" class="carousel slide" data-bs-ride="carousel">
-        <!-- Indicator Dots -->
-        <div class="carousel-indicators">
-          <button type="button" data-bs-target="#weatherCarousel" data-bs-slide-to="0" class="active"></button>
-          <button type="button" data-bs-target="#weatherCarousel" data-bs-slide-to="1"></button>
-          <button type="button" data-bs-target="#weatherCarousel" data-bs-slide-to="2"></button>
-        </div>
-        
-        <div class="carousel-inner">
-          <!-- Temperature Card -->
-          <div class="carousel-item active">
-            <div class="card h-100 rounded-3 shadow-sm mx-auto" style="max-width: 400px;">
-              <div class="card-header py-3">
-                <h4 class="my-0 fw-normal">Temperature</h4>
-              </div>
-              <div class="card-body d-flex flex-column">
-                <ul class="list-unstyled mt-3 mb-4">
-                  <li><strong>Min. Temp:</strong> <span id="min-temp">--</span>°C</li>
-                  <li><strong>Max. Temp:</strong> <span id="max-temp">--</span>°C</li>
-                  <li><strong>Feels Like:</strong> <span id="feels-like">--</span>°C</li>
-                </ul>
-                <button type="button" class="w-100 btn btn-lg btn-outline-primary mt-auto refresh-btn" data-type="temp">
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </div>
-    
-          <!-- Wind Speed Card -->
-          <div class="carousel-item">
-            <div class="card h-100 rounded-3 shadow-sm mx-auto" style="max-width: 400px;">
-              <div class="card-header py-3">
-                <h4 class="my-0 fw-normal">Wind</h4>
-              </div>
-              <div class="card-body d-flex flex-column">
-                <ul class="list-unstyled mt-3 mb-4">
-                  <li><strong>Speed:</strong> <span id="wind-speed">--</span> m/s</li>
-                  <li><strong>Direction:</strong> <span id="wind-direction">--</span>°</li>
-                  <li><strong>Gust:</strong> <span id="wind-gust">--</span> m/s</li>
-                </ul>
-                <button type="button" class="w-100 btn btn-lg btn-primary mt-auto refresh-btn" data-type="wind">
-                  Refresh
-                </button>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      const apiKey = "78a8b2343e0e5efcba0d181d99124873";
+      function getAQIDescription(aqi) {
+        const levels = ["Good", "Fair", "Moderate", "Poor", "Very Poor"];
+        return `${aqi} (${levels[aqi - 1]})`;
+      }
+      function getAQIClass(aqi) {
+        return ['aqi-good','aqi-fair','aqi-moderate','aqi-poor','aqi-very-poor'][aqi - 1] || '';
+      }
+      function getDominantPollutant(components) {
+        let maxVal = 0, dominant = '';
+        for (const key in components) {
+          if (components[key] > maxVal) {
+            maxVal = components[key];
+            dominant = key;
+          }
+        }
+        return `${dominant.toUpperCase()} (${maxVal})`;
+      }
+      function getPollutantColor(value) {
+        if (value < 20) return "#009966";
+        if (value < 50) return "#ffde33";
+        if (value < 100) return "#ff9933";
+        if (value < 150) return "#cc0033";
+        return "#660099";
+      }
+      function displayPollutantBars(components) {
+        const barContainer = document.getElementById("pollutant-bars");
+        barContainer.innerHTML = "";
+        for (const key in components) {
+          const value = components[key];
+          const width = Math.min((value / 200) * 100, 100);
+          const color = getPollutantColor(value);
+          barContainer.innerHTML += `
+            <div class="pollutant">
+              <div class="label">${key.toUpperCase()}: ${value.toFixed(2)}</div>
+              <div class="bar">
+                <div class="bar-fill" style="width: ${width}%; background: ${color};"></div>
               </div>
             </div>
-          </div>
-    
-          <!-- Day Report Card -->
-          <div class="carousel-item">
-            <div class="card h-100 rounded-3 shadow-sm border-primary mx-auto" style="max-width: 400px;">
-              <div class="card-header py-3 text-bg-primary border-primary">
-                <h4 class="my-0 fw-normal">Day Report</h4>
-              </div>
-              <div class="card-body d-flex flex-column">
-                <ul class="list-unstyled mt-3 mb-4">
-                  <li><strong>Sunrise:</strong> <span id="sunrise">--:--</span></li>
-                  <li><strong>Sunset:</strong> <span id="sunset">--:--</span></li>
-                  <li><strong>Humidity:</strong> <span id="humidity">--</span>%</li>
-                  <li><strong>Pressure:</strong> <span id="pressure">--</span> hPa</li>
-                </ul>
-                <button type="button" class="w-100 btn btn-lg btn-primary mt-auto refresh-btn" data-type="day">
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Carousel Controls -->
-        <button class="carousel-control-prev" type="button" data-bs-target="#weatherCarousel" data-bs-slide="prev">
-          <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Previous</span>
-        </button>
-        <button class="carousel-control-next" type="button" data-bs-target="#weatherCarousel" data-bs-slide="next">
-          <span class="carousel-control-next-icon" aria-hidden="true"></span>
-          <span class="visually-hidden">Next</span>
-        </button>
-      </div>
-    </div>
-    
-    
-    
-    
-
-      <div class="table-container">
-        <h2 class="display-6 text-center mb-4">CURRENT ANALYSIS</h2>
-        
-        <div class="d-flex justify-content-center mb-3">
-          <button id="refresh-btn" class="btn btn-primary">
-            <span id="refresh-icon" class="spinner-border spinner-border-sm d-none"></span>
-            Refresh Data
-          </button>
-        </div>
-      
-        <div class="table-responsive">
-          <table class="table text-center table-striped">
-            <thead class="table-light">
-              <tr>
-                <th style="width: 25%;">City</th>
-                <th>PM2.5</th>
-                <th>PM10</th>
-                <th>NO2</th>
-                <th>SO2</th>
-                <th>CO</th>
-                <th>O3</th>
-                <th>AQI</th>
-              </tr>
-            </thead>
-            <tbody id="aqi-table-body">
-              <!-- Data will be inserted here by JavaScript -->
-              <tr>
-                <td colspan="8" class="text-center py-4">
-                  <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                  </div>
-                  <p class="mt-2 mb-0">Loading air quality data...</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous"></script>
-    <script src="script.js"></script>
+          `;
+        }
+      }
+      function fetchAQI(lat, lon) {
+        fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.list?.length) {
+              const { aqi } = data.list[0].main;
+              const components = data.list[0].components;
+              document.getElementById("city").innerText = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+              document.getElementById("aqi").innerText = getAQIDescription(aqi);
+              document.getElementById("pollutant").innerText = getDominantPollutant(components);
+              const card = document.getElementById("aqi-card");
+              card.className = `card ${getAQIClass(aqi)}`;
+              card.style.display = 'block';
+              document.getElementById("loading").style.display = 'none';
+              displayPollutantBars(components);
+            }
+          }).catch(() => {
+            document.getElementById("loading").innerText = "Error fetching AQI.";
+          });
+      }
+      function fetchForecastAQI(lat, lon) {
+        fetch(`https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.list?.length) {
+              const labels = [], values = [];
+              data.list.slice(0, 12).forEach(entry => {
+                labels.push(new Date(entry.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+                values.push(entry.main.aqi);
+              });
+              showAQIGraph(labels, values);
+            }
+          });
+      }
+      let aqiChart;
+      function showAQIGraph(labels, values) {
+        const ctx = document.getElementById('aqi-chart').getContext('2d');
+        document.getElementById('aqi-chart').style.display = 'block';
+        if (aqiChart) aqiChart.destroy();
+        aqiChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Forecast AQI (Next 24 Hours)',
+              data: values,
+              borderColor: '#fff',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              tension: 0.3,
+              fill: true
+            }]
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: true, ticks: { color: '#fff' }, title: { display: true, text: 'AQI Level', color: '#fff' } },
+              x: { ticks: { color: '#fff' } }
+            },
+            plugins: { legend: { labels: { color: '#fff' } } }
+          }
+        });
+      }
+      function getCoordsByCity(city, callback) {
+        fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data?.length) {
+              const { lat, lon, name, country } = data[0];
+              callback(lat, lon, `${name}, ${country}`);
+            } else alert("City not found.");
+          });
+      }
+      function searchCity() {
+        const city = document.getElementById("city-input").value.trim();
+        if (city) {
+          getCoordsByCity(city, (lat, lon, name) => {
+            document.getElementById("location-name").innerText = name;
+            fetchAQI(lat, lon);
+            fetchForecastAQI(lat, lon);
+          });
+        }
+      }
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          pos => {
+            const { latitude: lat, longitude: lon } = pos.coords;
+            fetchAQI(lat, lon);
+            fetchForecastAQI(lat, lon);
+          },
+          err => document.getElementById("loading").innerText = "Unable to access location.",
+          { enableHighAccuracy: true }
+        );
+      } else document.getElementById("loading").innerText = "Geolocation not supported.";
+    </script>
   </body>
 </html>
