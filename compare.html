@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare AQI - Air Quality</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            padding-bottom: 70px; /* To ensure content isn't hidden behind the navbar */
+        }
+
+        #compare-container {
+            margin: 20px 0;
+        }
+
+        #city-list {
+            margin-top: 20px;
+        }
+
+        #city-list table {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #city-list td, #city-list th {
+            text-align: center;
+        }
+
+        #search-bar input {
+            font-size: 14px;
+        }
+
+        #search-bar button {
+            font-size: 14px;
+        }
+
+        #aqi-chart {
+            margin-top: 20px;
+        }
+
+        /* Media query for responsiveness */
+        @media (max-width: 576px) {
+            #search-bar input, #search-bar button {
+                font-size: 12px;
+            }
+            .container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            #compare-container {
+                margin: 10px 0;
+            }
+        }
+
+        /* Fixed bottom navbar with transparent blurry background */
+        .navbar-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.3); /* Transparent background */
+            backdrop-filter: blur(10px); /* Blurry effect */
+            padding: 10px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); /* Optional: Add some shadow */
+        }
+
+        .navbar-bottom a {
+            color: black;
+            font-size: 16px;
+            font-weight: bold; /* Bold text */
+            text-decoration: none;
+            padding: 10px 20px;
+            border: 2px solid black; /* Boxy design */
+            border-radius: 0; /* Sharp edges (boxy design) */
+            background-color: white;
+            transition: background-color 0.3s, color 0.3s; /* Smooth transition */
+        }
+
+        .navbar-bottom a:hover {
+            background-color: black;
+            color: white; /* Invert colors on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="mt-3">Compare Air Quality (AQI) Across Cities</h2>
+
+        <div id="compare-container">
+            <div id="search-bar">
+                <input type="text" class="form-control" id="city-search" placeholder="Enter city name">
+                <button class="btn btn-primary mt-2" id="add-city-btn">Add City</button>
+            </div>
+            <div id="city-list">
+                <h4>Cities to Compare</h4>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>City</th>
+                            <th>AQI Value</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="city-table-body">
+                        <!-- Dynamically populated rows will appear here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Chart for comparing AQI -->
+        <canvas id="aqi-chart" width="400" height="200"></canvas>
+
+    </div>
+
+    <!-- Fixed bottom navbar with a button -->
+    <div class="navbar-bottom">
+        <a href="index.html" id="back-to-home-btn">Back to Home</a>
+    </div>
+
+    <script>
+        const WAQI_API_KEY = "cd1508b98d3934b55151d684158ed8600a4c4a01"; // Replace with your WAQI API Key
+        const cityList = [];
+
+        // Function to fetch AQI data using WAQI API
+        function fetchAQI(city) {
+            const apiUrl = `https://api.waqi.info/feed/${city.name}/?token=${WAQI_API_KEY}`;
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "ok" && data.data.aqi !== undefined) {
+                        const aqi = data.data.aqi; // Actual AQI value
+                        city.aqi = aqi; // Store AQI data in the city object
+                        updateCityList();
+                        updateChart();
+                    } else {
+                        alert(`Could not fetch AQI data for ${city.name}. Please check the city name.`);
+                        console.error(`Error fetching AQI for ${city.name}:`, data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching AQI data:', error);
+                    alert(`Could not fetch AQI for ${city.name}. Please try again later.`);
+                });
+        }
+
+        // Function to update the city list in the table
+        function updateCityList() {
+            const cityTableBody = document.getElementById('city-table-body');
+            cityTableBody.innerHTML = ""; // Clear existing rows
+
+            cityList.forEach(city => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${city.name}</td>
+                    <td>${city.aqi !== undefined ? city.aqi : 'Loading...'}</td>
+                    <td><button class="btn btn-danger" onclick="removeCity('${city.name}')">Remove</button></td>
+                `;
+                cityTableBody.appendChild(row);
+            });
+        }
+
+        // Function to update the chart with AQI values
+        function updateChart() {
+            const cityNames = cityList.map(city => city.name);
+            const aqiValues = cityList.map(city => city.aqi);
+
+            const ctx = document.getElementById('aqi-chart').getContext('2d');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: cityNames,
+                    datasets: [{
+                        label: 'AQI Values',
+                        data: aqiValues,
+                        backgroundColor: '#0d6efd',
+                        borderColor: '#0d6efd',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'AQI Value'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'City'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Function to add city to the list
+        document.getElementById('add-city-btn').addEventListener('click', function() {
+            const cityName = document.getElementById('city-search').value.trim();
+            if (cityName) {
+                // Fetch AQI data for the new city
+                const city = {
+                    name: cityName,
+                };
+                cityList.push(city);
+                fetchAQI(city); // Fetch AQI data for the new city
+                document.getElementById('city-search').value = ''; // Clear input field
+            } else {
+                alert('Please enter a city name.');
+            }
+        });
+
+        // Function to remove city from the comparison list
+        function removeCity(cityName) {
+            const index = cityList.findIndex(city => city.name === cityName);
+            if (index !== -1) {
+                cityList.splice(index, 1); // Remove the city from the array
+                updateCityList(); // Re-render the city list
+                updateChart(); // Update the chart
+            }
+        }
+    </script>
+</body>
+</html>

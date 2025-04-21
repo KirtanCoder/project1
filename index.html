@@ -89,160 +89,40 @@
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light" style="background-color: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);">
-      <div class="container-fluid d-flex justify-content-between">
-        <!-- Left aligned item -->
-        <div class="d-flex justify-content-start">
-          <button  class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true" style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc;">Home</button>
-        </div>
+      <div class="d-flex justify-content-center flex-grow-1">
+        <a 
+          href="index.html" 
+          class="nav-link" 
+          id="nav-profile-tab" 
+          style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc; cursor: pointer;"
+        >
+          Home
+        </a>
+      </div>
 
         <!-- Center aligned item -->
         <div class="d-flex justify-content-center flex-grow-1">
-          <button class="nav-link" id="nav-profile-tab" data-bs-toggle="tab" data-bs-target="#nav-profile" type="button" role="tab" aria-controls="nav-profile" aria-selected="false" style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc;">Graph</button>
+          <a 
+            href="chart.html" 
+            class="nav-link" 
+            id="nav-profile-tab" 
+            style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc; cursor: pointer;"
+          >
+            AQI Chart
+          </a>
         </div>
-
         <!-- Right aligned item -->
-        <div class="d-flex justify-content-end">
-          <button class="nav-link" id="nav-contact-tab" data-bs-toggle="tab" data-bs-target="#nav-contact" type="button" role="tab" aria-controls="nav-contact" aria-selected="false" style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc;">Compare</button>
+        <div class="d-flex justify-content-center flex-grow-1">
+          <a 
+            href="compare.html" 
+            class="nav-link" 
+            id="nav-profile-tab" 
+            style="color: black; background-color: white; padding: 10px 20px; border-radius: 15px; border: 2px solid #ccc; cursor: pointer;"
+          >
+            Compare
+          </a>
         </div>
-      </div>
-    </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      const apiKey = "78a8b2343e0e5efcba0d181d99124873";
-      function getAQIDescription(aqi) {
-        const levels = ["Good", "Fair", "Moderate", "Poor", "Very Poor"];
-        return `${aqi} (${levels[aqi - 1]})`;
-      }
-      function getAQIClass(aqi) {
-        return ['aqi-good','aqi-fair','aqi-moderate','aqi-poor','aqi-very-poor'][aqi - 1] || '';
-      }
-      function getDominantPollutant(components) {
-        let maxVal = 0, dominant = '';
-        for (const key in components) {
-          if (components[key] > maxVal) {
-            maxVal = components[key];
-            dominant = key;
-          }
-        }
-        return `${dominant.toUpperCase()} (${maxVal})`;
-      }
-      function getPollutantColor(value) {
-        if (value < 20) return "#009966";
-        if (value < 50) return "#ffde33";
-        if (value < 100) return "#ff9933";
-        if (value < 150) return "#cc0033";
-        return "#660099";
-      }
-      function displayPollutantBars(components) {
-        const barContainer = document.getElementById("pollutant-bars");
-        barContainer.innerHTML = "";
-        for (const key in components) {
-          const value = components[key];
-          const width = Math.min((value / 200) * 100, 100);
-          const color = getPollutantColor(value);
-          barContainer.innerHTML += `
-            <div class="pollutant">
-              <div class="label">${key.toUpperCase()}: ${value.toFixed(2)}</div>
-              <div class="bar">
-                <div class="bar-fill" style="width: ${width}%; background: ${color};"></div>
-              </div>
-            </div>
-          `;
-        }
-      }
-      function fetchAQI(lat, lon) {
-        fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.list?.length) {
-              const { aqi } = data.list[0].main;
-              const components = data.list[0].components;
-              document.getElementById("city").innerText = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-              document.getElementById("aqi").innerText = getAQIDescription(aqi);
-              document.getElementById("pollutant").innerText = getDominantPollutant(components);
-              const card = document.getElementById("aqi-card");
-              card.className = `card ${getAQIClass(aqi)}`;
-              card.style.display = 'block';
-              document.getElementById("loading").style.display = 'none';
-              displayPollutantBars(components);
-            }
-          }).catch(() => {
-            document.getElementById("loading").innerText = "Error fetching AQI.";
-          });
-      }
-      function fetchForecastAQI(lat, lon) {
-        fetch(`https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.list?.length) {
-              const labels = [], values = [];
-              data.list.slice(0, 12).forEach(entry => {
-                labels.push(new Date(entry.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-                values.push(entry.main.aqi);
-              });
-              showAQIGraph(labels, values);
-            }
-          });
-      }
-      let aqiChart;
-      function showAQIGraph(labels, values) {
-        const ctx = document.getElementById('aqi-chart').getContext('2d');
-        document.getElementById('aqi-chart').style.display = 'block';
-        if (aqiChart) aqiChart.destroy();
-        aqiChart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Forecast AQI (Next 24 Hours)',
-              data: values,
-              borderColor: '#fff',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              tension: 0.3,
-              fill: true
-            }]
-          },
-          options: {
-            scales: {
-              y: { beginAtZero: true, ticks: { color: '#fff' }, title: { display: true, text: 'AQI Level', color: '#fff' } },
-              x: { ticks: { color: '#fff' } }
-            },
-            plugins: { legend: { labels: { color: '#fff' } } }
-          }
-        });
-      }
-      function getCoordsByCity(city, callback) {
-        fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`)
-          .then(res => res.json())
-          .then(data => {
-            if (data?.length) {
-              const { lat, lon, name, country } = data[0];
-              callback(lat, lon, `${name}, ${country}`);
-            } else alert("City not found.");
-          });
-      }
-      function searchCity() {
-        const city = document.getElementById("city-input").value.trim();
-        if (city) {
-          getCoordsByCity(city, (lat, lon, name) => {
-            document.getElementById("location-name").innerText = name;
-            fetchAQI(lat, lon);
-            fetchForecastAQI(lat, lon);
-          });
-        }
-      }
-      if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            const { latitude: lat, longitude: lon } = pos.coords;
-            fetchAQI(lat, lon);
-            fetchForecastAQI(lat, lon);
-          },
-          err => document.getElementById("loading").innerText = "Unable to access location.",
-          { enableHighAccuracy: true }
-        );
-      } else document.getElementById("loading").innerText = "Geolocation not supported.";
-    </script>
+   <script src="script.js"></script>
   </body>
 </html>
