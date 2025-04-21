@@ -34,8 +34,11 @@
             font-size: 16px;
         }
 
-        #aqi-chart {
+        #chart-container {
             margin-top: 20px;
+            width: 100%;
+            height: 300px;
+            position: relative;
         }
 
         .navbar-bottom {
@@ -91,9 +94,12 @@
                 font-size: 18px;
             }
 
-            canvas {
-                width: 100% !important;
-                height: auto !important;
+            #chart-container {
+                height: 250px;
+            }
+
+            #city-list table {
+                font-size: 14px;
             }
         }
     </style>
@@ -124,7 +130,9 @@
             </div>
         </div>
 
-        <canvas id="aqi-chart"></canvas>
+        <div id="chart-container">
+            <canvas id="aqi-chart"></canvas>
+        </div>
     </div>
 
     <div class="navbar-bottom">
@@ -208,6 +216,11 @@
         document.getElementById('add-city-btn').addEventListener('click', () => {
             const cityName = document.getElementById('city-search').value.trim();
             if (cityName) {
+                const existing = cityList.find(c => c.name.toLowerCase() === cityName.toLowerCase());
+                if (existing) {
+                    alert('City already added.');
+                    return;
+                }
                 const city = { name: cityName };
                 cityList.push(city);
                 fetchAQI(city);
