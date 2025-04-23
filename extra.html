@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirCare - Smart Air Quality Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js">
+    <style>
+        :root {
+            --primary: #4a89dc;
+            --secondary: #3bafda;
+            --success: #8cc152;
+            --warning: #f6bb42;
+            --danger: #e9573f;
+            --dark: #434a54;
+            --light: #f5f7fa;
+            --gray: #e6e9ed;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo i {
+            color: var(--primary);
+            font-size: 2rem;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            color: var(--dark);
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-profile img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 6px 12px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid var(--gray);
+            color: var(--dark);
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 0.8rem;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .current-aqi {
+            grid-column: span 4;
+        }
+        
+        .aqi-value {
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .aqi-good {
+            color: var(--success);
+        }
+        
+        .aqi-moderate {
+            color: var(--warning);
+        }
+        
+        .aqi-unhealthy {
+            color: var(--danger);
+        }
+        
+        .aqi-description {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .health-recommendations {
+            grid-column: span 4;
+        }
+        
+        .recommendation {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: rgba(74, 137, 220, 0.1);
+        }
+        
+        .recommendation i {
+            color: var(--primary);
+            margin-top: 3px;
+        }
+        
+        .trends-chart {
+            grid-column: span 8;
+            height: 400px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+        }
+        
+        .notification-settings {
+            grid-column: span 4;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--gray);
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group input {
+            width: auto;
+        }
+        
+        .pollution-sources {
+            grid-column: span 6;
+            height: 400px;
+        }
+        
+        .map-container {
+            height: 350px;
+            width: 100%;
+            background-color: var(--gray);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--dark);
+        }
+        
+        .source-list {
+            margin-top: 15px;
+        }
+        
+        .source-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .forecast {
+            grid-column: span 6;
+        }
+        
+        .forecast-cards {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .forecast-card {
+            min-width: 120px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--light);
+            text-align: center;
+        }
+        
+        .forecast-day {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .forecast-icon {
+            font-size: 2rem;
+            margin: 10px 0;
+            color: var(--primary);
+        }
+        
+        .forecast-aqi {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .pollen-allergy {
+            grid-column: span 4;
+        }
+        
+        .pollen-level {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .pollen-type {
+            font-weight: 500;
+        }
+        
+        .level-bar {
+            height: 10px;
+            width: 60%;
+            background-color: var(--gray);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .level-fill {
+            height: 100%;
+            background-color: var(--success);
+        }
+        
+        .level-high {
+            background-color: var(--danger);
+        }
+        
+        .level-medium {
+            background-color: var(--warning);
+        }
+        
+        .gamification {
+            grid-column: span 4;
+        }
+        
+        .badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .badge {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--dark);
+            position: relative;
+        }
+        
+        .badge-earned {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .badge-tooltip {
+            position: absolute;
+            bottom: -30px;
+            background-color: var(--dark);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .badge:hover .badge-tooltip {
+            opacity: 1;
+        }
+        
+        .eco-tips {
+            grid-column: span 4;
+        }
+        
+        .tip-card {
+            background-color: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .tip-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .community-reports {
+            grid-column: span 6;
+        }
+        
+        .report {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .report-img {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+        
+        .report-content {
+            flex: 1;
+        }
+        
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .transport-suggestions {
+            grid-column: span 6;
+        }
+        
+        .transport-option {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background-color: var(--light);
+        }
+        
+        .transport-icon {
+            font-size: 1.5rem;
+            color: var(--primary);
+        }
+        
+        .transport-details {
+            flex: 1;
+        }
+        
+        .transport-time {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .government-actions {
+            grid-column: span 12;
+        }
+        
+        .action-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .action-date {
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .action-day {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .action-month {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .action-content {
+            flex: 1;
+        }
+        
+        .action-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--gray);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 1024px) {
+            .current-aqi, .health-recommendations, .notification-settings, 
+            .pollen-allergy, .gamification, .eco-tips {
+                grid-column: span 6;
+            }
+            
+            .trends-chart, .pollution-sources, .forecast, 
+            .community-reports, .transport-suggestions {
+                grid-column: span 12;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid > div {
+                grid-column: span 12 !important;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .forecast-cards {
+                flex-wrap: wrap;
+            }
+            
+            .forecast-card {
+                min-width: calc(50% - 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-wind"></i>
+                <h1>AirCare</h1>
+            </div>
+            <div class="user-profile">
+                <div>
+                    <h3>John Doe</h3>
+                    <small>New York, NY</small>
+                </div>
+                <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User">
+            </div>
+        </header>
+        
+        <div class="dashboard-grid">
+            <!-- Current AQI -->
+            <div class="card current-aqi">
+                <div class="card-header">
+                    <h2 class="card-title">Current Air Quality</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="aqi-value aqi-moderate">87</div>
+                <div class="aqi-description">Moderate - Air quality is acceptable; however, there may be a risk for some people.</div>
+                <div class="card-actions" style="justify-content: center;">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-info-circle"></i> Details
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Health Recommendations -->
+            <div class="card health-recommendations">
+                <div class="card-header">
+                    <h2 class="card-title">Health Recommendations</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-user-cog"></i> Profile
+                        </button>
+                    </div>
+                </div>
+                <div class="recommendation">
+                    <i class="fas fa-heartbeat"></i>
+                    <div>
+                        <strong>For heart patients:</strong> Limit prolonged outdoor exertion today.
+                    </div>
+                </div>
+                <div class="recommendation">
+                    <i class="fas fa-lungs"></i>
+                    <div>
+                        <strong>For asthma patients:</strong> Keep rescue inhaler handy if going outside.
+                    </div>
+                </div>
+                <div class="recommendation">
+                    <i class="fas fa-running"></i>
+                    <div>
+                        <strong>For outdoor exercise:</strong> Reduce intensity or exercise indoors today.
+                    </div>
+                </div>
+                <div class="recommendation">
+                    <i class="fas fa-mask"></i>
+                    <div>
+                        <strong>Protection:</strong> Consider wearing an N95 mask if outdoors for extended periods.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Settings -->
+            <div class="card notification-settings">
+                <div class="card-header">
+                    <h2 class="card-title">Alert Settings</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="notification-type">Notification Type</label>
+                    <select id="notification-type">
+                        <option>Push Notification</option>
+                        <option>Email</option>
+                        <option>Both</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Alert Me When AQI:</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-unhealthy" checked>
+                        <label for="alert-unhealthy">Exceeds 100 (Unhealthy)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-very-unhealthy" checked>
+                        <label for="alert-very-unhealthy">Exceeds 150 (Very Unhealthy)</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="alert-hazardous">
+                        <label for="alert-hazardous">Exceeds 200 (Hazardous)</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="locations">Locations to Monitor</label>
+                    <input type="text" id="locations" placeholder="New York, Boston, etc." value="New York, Boston">
+                </div>
+            </div>
+            
+            <!-- Trends Chart -->
+            <div class="card trends-chart">
+                <div class="card-header">
+                    <h2 class="card-title">AQI Trends</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <select class="btn btn-outline btn-sm">
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                            <option>Last 3 Months</option>
+                            <option selected>Last 6 Months</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Pollution Sources -->
+            <div class="card pollution-sources">
+                <div class="card-header">
+                    <h2 class="card-title">Nearby Pollution Sources</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-redo"></i> Update
+                        </button>
+                    </div>
+                </div>
+                <div class="map-container">
+                    <i class="fas fa-map-marked-alt" style="font-size: 2rem;"></i>
+                    <span>Interactive Map Loading...</span>
+                </div>
+                <div class="source-list">
+                    <div class="source-item">
+                        <span><i class="fas fa-industry"></i> Industrial Plant (3.2mi NE)</span>
+                        <span>Primary PM2.5 source</span>
+                    </div>
+                    <div class="source-item">
+                        <span><i class="fas fa-car"></i> Highway I-95 (1.5mi W)</span>
+                        <span>NO2, CO source</span>
+                    </div>
+                    <div class="source-item">
+                        <span><i class="fas fa-building"></i> Construction Site (0.8mi S)</span>
+                        <span>PM10 source</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Forecast -->
+            <div class="card forecast">
+                <div class="card-header">
+                    <h2 class="card-title">Weather & AQI Forecast</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-sliders-h"></i> Configure
+                        </button>
+                    </div>
+                </div>
+                <div class="forecast-cards">
+                    <div class="forecast-card">
+                        <div class="forecast-day">Today</div>
+                        <i class="fas fa-sun forecast-icon"></i>
+                        <div>72°F • 15 mph</div>
+                        <div class="forecast-aqi aqi-moderate">87 AQI</div>
+                        <div>Moderate</div>
+                    </div>
+                    <div class="forecast-card">
+                        <div class="forecast-day">Wed</div>
+                        <i class="fas fa-cloud-sun forecast-icon"></i>
+                        <div>68°F • 12 mph</div>
+                        <div class="forecast-aqi aqi-good">45 AQI</div>
+                        <div>Good</div>
+                    </div>
+                    <div class="forecast-card">
+                        <div class="forecast-day">Thu</div>
+                        <i class="fas fa-cloud-rain forecast-icon"></i>
+                        <div>65°F • 8 mph</div>
+                        <div class="forecast-aqi aqi-good">32 AQI</div>
+                        <div>Good</div>
+                    </div>
+                    <div class="forecast-card">
+                        <div class="forecast-day">Fri</div>
+                        <i class="fas fa-cloud forecast-icon"></i>
+                        <div>70°F • 5 mph</div>
+                        <div class="forecast-aqi aqi-moderate">65 AQI</div>
+                        <div>Moderate</div>
+                    </div>
+                    <div class="forecast-card">
+                        <div class="forecast-day">Sat</div>
+                        <i class="fas fa-sun forecast-icon"></i>
+                        <div>75°F • 3 mph</div>
+                        <div class="forecast-aqi aqi-unhealthy">112 AQI</div>
+                        <div>Unhealthy</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pollen & Allergy -->
+            <div class="card pollen-allergy">
+                <div class="card-header">
+                    <h2 class="card-title">Pollen & Allergy Index</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="pollen-level">
+                    <span class="pollen-type">Tree Pollen</span>
+                    <div class="level-bar">
+                        <div class="level-fill" style="width: 70%;"></div>
+                    </div>
+                    <span>High</span>
+                </div>
+                <div class="pollen-level">
+                    <span class="pollen-type">Grass Pollen</span>
+                    <div class="level-bar">
+                        <div class="level-fill level-medium" style="width: 40%;"></div>
+                    </div>
+                    <span>Medium</span>
+                </div>
+                <div class="pollen-level">
+                    <span class="pollen-type">Weed Pollen</span>
+                    <div class="level-bar">
+                        <div class="level-fill" style="width: 20%;"></div>
+                    </div>
+                    <span>Low</span>
+                </div>
+                <div class="pollen-level">
+                    <span class="pollen-type">Mold Spores</span>
+                    <div class="level-bar">
+                        <div class="level-fill level-high" style="width: 85%;"></div>
+                    </div>
+                    <span>Very High</span>
+                </div>
+                <div class="recommendation" style="margin-top: 20px;">
+                    <i class="fas fa-allergies"></i>
+                    <div>
+                        <strong>Allergy advice:</strong> Keep windows closed, shower after being outdoors, and consider antihistamines.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gamification -->
+            <div class="card gamification">
+                <div class="card-header">
+                    <h2 class="card-title">Your Eco Progress</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-trophy"></i> 245 pts
+                        </button>
+                    </div>
+                </div>
+                <div class="recommendation">
+                    <i class="fas fa-leaf"></i>
+                    <div>
+                        <strong>Daily Challenge:</strong> Use public transport today to earn 50 points!
+                    </div>
+                </div>
+                <div style="margin: 15px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                        <span>Weekly Progress</span>
+                        <span>3/5 challenges</span>
+                    </div>
+                    <div style="height: 10px; background-color: var(--gray); border-radius: 5px;">
+                        <div style="width: 60%; height: 100%; background-color: var(--success); border-radius: 5px;"></div>
+                    </div>
+                </div>
+                <h3 style="margin-bottom: 10px;">Your Badges</h3>
+                <div class="badges">
+                    <div class="badge badge-earned">
+                        <i class="fas fa-check"></i>
+                        <span class="badge-tooltip">Consistent Checker</span>
+                    </div>
+                    <div class="badge badge-earned">
+                        <i class="fas fa-bus"></i>
+                        <span class="badge-tooltip">Green Commuter</span>
+                    </div>
+                    <div class="badge">
+                        <i class="fas fa-tree"></i>
+                        <span class="badge-tooltip">Tree Planter</span>
+                    </div>
+                    <div class="badge">
+                        <i class="fas fa-recycle"></i>
+                        <span class="badge-tooltip">Recycler</span>
+                    </div>
+                    <div class="badge">
+                        <i class="fas fa-bicycle"></i>
+                        <span class="badge-tooltip">Bike Enthusiast</span>
+                    </div>
+                    <div class="badge">
+                        <i class="fas fa-star"></i>
+                        <span class="badge-tooltip">Air Quality Expert</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Eco Tips -->
+            <div class="card eco-tips">
+                <div class="card-header">
+                    <h2 class="card-title">Eco Tips</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-random"></i> Shuffle
+                        </button>
+                    </div>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-title">
+                        <i class="fas fa-car"></i> Reduce Vehicle Emissions
+                    </div>
+                    <p>Combine errands into one trip to reduce cold starts, which produce more pollution. Consider carpooling or using public transport.</p>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-title">
+                        <i class="fas fa-home"></i> Improve Indoor Air
+                    </div>
+                    <p>Use natural cleaning products, open windows when outdoor air is clean, and consider indoor plants that purify air like spider plants.</p>
+                </div>
+                <div class="tip-card">
+                    <div class="tip-title">
+                        <i class="fas fa-plug"></i> Energy Efficiency
+                    </div>
+                    <p>Switch to LED bulbs and unplug devices when not in use. This reduces power plant emissions that contribute to air pollution.</p>
+                </div>
+            </div>
+            
+            <!-- Community Reports -->
+            <div class="card community-reports">
+                <div class="card-header">
+                    <h2 class="card-title">Community Reports</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Add Report
+                        </button>
+                    </div>
+                </div>
+                <div class="report">
+                    <img src="https://via.placeholder.com/80" alt="Report" class="report-img">
+                    <div class="report-content">
+                        <div class="report-meta">
+                            <span>Sarah K. • 2 hours ago</span>
+                            <span>0.8mi away</span>
+                        </div>
+                        <p>Large garbage burning near Central Park causing heavy smoke. Avoid the area if possible.</p>
+                    </div>
+                </div>
+                <div class="report">
+                    <img src="https://via.placeholder.com/80" alt="Report" class="report-img">
+                    <div class="report-content">
+                        <div class="report-meta">
+                            <span>Mike T. • 5 hours ago</span>
+                            <span>1.2mi away</span>
+                        </div>
+                        <p>Major traffic jam on 5th Ave due to construction. Air smells strongly of diesel.</p>
+                    </div>
+                </div>
+                <div class="report">
+                    <img src="https://via.placeholder.com/80" alt="Report" class="report-img">
+                    <div class="report-content">
+                        <div class="report-meta">
+                            <span>Local Health Dept. • Yesterday</span>
+                            <span>Official</span>
+                        </div>
+                        <p>Air quality advisory issued for tomorrow due to expected high ozone levels.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transport Suggestions -->
+            <div class="card transport-suggestions">
+                <div class="card-header">
+                    <h2 class="card-title">Clean Transport Options</h2>
+                    <div class="card-actions">
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-route"></i> Show Routes
+                        </button>
+                    </div>
+                </div>
+                <div class="transport-option">
+                    <div class="transport-icon">
+                        <i class="fas fa-subway"></i>
+                    </div>
+                    <div class="transport-details">
+                        <strong>Subway Line 4</strong>
+                        <div>Downtown to Upper East Side</div>
+                        <div class="transport-time">Every 5-8 min • 15 min trip</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-directions"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="transport-option">
+                    <div class="transport-icon">
+                        <i class="fas fa-bus"></i>
+                    </div>
+                    <div class="transport-details">
+                        <strong>M15 Bus</strong>
+                        <div>South Ferry to East Harlem</div>
+                        <div class="transport-time">Every 10-12 min • 35 min trip</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-directions"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="transport-option">
+                    <div class="transport-icon">
+                        <i class="fas fa-bicycle"></i>
+                    </div>
+                    <div class="transport-details">
+                        <strong>Citi Bike</strong>
+                        <div>3 bikes available at 5th & 42nd</div>
+                        <div class="transport-time">15 min ride • 250 cal burn</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-directions"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="transport-option">
+                    <div class="transport-icon">
+                        <i class="fas fa-walking"></i>
+                    </div>
+                    <div class="transport-details">
+                        <strong>Walking</strong>
+                        <div>Midtown to Upper West Side</div>
+                        <div class="transport-time">25 min walk • 120 cal burn</div>
+                    </div>
+                    <div>
+                        <button class="btn btn-outline btn-sm">
+                            <i class="fas fa-directions"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Government Actions -->
+            <div class="card government-actions">
+                <div class="card-header">
+                    <h2 class="card-title">Government Actions</h2>
+                    <div class="card-actions">
+                        <div class="tabs">
+                            <div class="tab active">Local</div>
+                            <div class="tab">State</div>
+                            <div class="tab">Federal</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content active">
+                    <div class="action-item">
+                        <div class="action-date">
+                            <div class="action-day">15</div>
+                            <div class="action-month">Jun</div>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Clean Air Initiative Launched</div>
+                            <p>Mayor announces $10M initiative to reduce emissions from city vehicles and buildings.</p>
+                        </div>
+                    </div>
+                    <div class="action-item">
+                        <div class="action-date">
+                            <div class="action-day">02</div>
+                            <div class="action-month">Jun</div>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Industrial Emission Standards Updated</div>
+                            <p>New regulations require 20% reduction in particulate emissions from local factories by 2025.</p>
+                        </div>
+                    </div>
+                    <div class="action-item">
+                        <div class="action-date">
+                            <div class="action-day">18</div>
+                            <div class="action-month">May</div>
+                        </div>
+                        <div class="action-content">
+                            <div class="action-title">Anti-Idling Enforcement Increased</div>
+                            <p>Police to issue more fines for vehicles idling more than 3 minutes near schools.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-content">
+                    <div style="padding: 20px; text-align: center; color: #666;">
+                        No recent state actions to display
+                    </div>
+                </div>
+                <div class="tab-content">
+                    <div style="padding: 20px; text-align: center; color: #666;">
+                        No recent federal actions to display
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Initialize trends chart
+        const trendsCtx = document.getElementById('trendsChart').getContext('2d');
+        const trendsChart = new Chart(trendsCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [
+                    {
+                        label: 'PM2.5',
+                        data: [65, 59, 80, 81, 76, 87],
+                        borderColor: '#e9573f',
+                        backgroundColor: 'rgba(233, 87, 63, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'PM10',
+                        data: [45, 52, 65, 59, 60, 72],
+                        borderColor: '#f6bb42',
+                        backgroundColor: 'rgba(246, 187, 66, 0.1)',
+                        tension: 0.3,
+                        fill: true
+                    },
+                    {
+                        label: 'Ozone',
+                        data: [32, 45, 40, 52, 68, 55],
+                        borderColor: '#4a89dc',
+                        backgroundColor: 'rgba(74, 137, 220, 0.1)',
+                        tension: 
